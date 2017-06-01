@@ -1,0 +1,163 @@
+基础架构
+1、服务注册中心：Eureka提供的服务端，提供服务注册于发现的功能，也就我们实现的eureka-manage
+
+2、服务提供者：提供服务的应用，可以是spring boot 应用，也可以是其他技术平台且遵循Eureka通信机制的应用，它将自己提供的服务注册到Eureka，以提供其他应用发现，也就是eureka-service应用
+
+3、服务消费者：消费者应用从服务注册中心获取服务列表，从而使得消费者可以知道何处调用其所需要的服务，我们使用Ribbon来实现服务消费，另外后续会使用Feign的消费方式
+
+服务治理机制
+1、服务注册中心-1和服务注册中心-2，他们互相注册组成了高可用集群
+
+2、服务提供者 启动了两个实例，一个注册到 服务注册中心-1，另一个注册到 服务注册中心-2 上
+
+服务提供者
+1、服务注册
+服务提供者 在启动的时候会通过发送REST请求的方式将自己注册到Eureka Server上，同时带上了自身服务的一些元素信息，Eureka Server 接收到这个REST请求之后，将元数据信息存储在一个双层结构Map中，启动第一层的key是服务名，第二层的key是具体的服务实例名
+在服务注册时，需要确认一下 eureka.client.register-with-eureka=true参数是否正确，该值默认是true，若设置为false将不会启动注册操作
+
+服务同步
+两个服务提供者分别注册到两个不同的服务注册中心上，他们的信息分别被两个服务注册中心维护，当服务提供者发送注册请求到一个服务注册中心时，他会将请求转发给集群中相连的其他注册中心，从而实现注册中心之间的服务同步。
+
+服务续约
+注册完成后，服务提供者会维护一个心跳来告诉注册中心我还活着，防止注册中心的踢出任务，通过设置进行调整
+#续约任务默认30秒
+eureka.instance.lease-renewal-interval-in-seconds=30
+#服务时效默认90秒
+eureka.instance.lease-expiration-duration-in-seconds=90
+
+服务消费者
+1、获取服务
+启动消费者的时候，它会发送一个REST请求给服务注册中心，来获取上面的注册的服务清单，为了性能考虑，Eureka 注册中心会维护一个份只读的服务清单来返回给客户端，同时清单会每个30秒更新一次，可以通过修改参数获取清单时间
+eureka.client.registry-fetch-interval-seconds=30 参数进行修改，该参数默认值为30秒
+
+2、服务调用
+服务消费者在获取服务清单后，通过服务名，可以获得具体服务的实例名和该实例的元素信息，因为有这些服务实例的详细信息，所以客户端可以根据自己的需求决定具体的调用哪个实例，在Ribbon中会默认采用轮询的方式进行调用，从而实现客户端的负载均衡
+对于访问实例的选择，Eureka中有Region和Zone的概念，一个Region中可以包含多个Zone，每个服务客户端需要被注册到一个Zone中，所以每个客户端对应一个Region和一个Zone，在进行服务调用的时候，有限访问同处一个Zone中的服务提供方，若访问不到，就访问其他的Zone
+
+3、服务下线
+在系统运行过程中必然会面临关闭或重启服务的某个实例情况，在服务关闭綦江我们自然不希望客户端会继续调用关闭的实例，所以在客户端程序中，当服务实例进行正常的关闭操作时，它会触发一个服务下线的REST请求给Eureka 注册中心，告诉中心 我要下线。服务端在接收到请求之后将该服务状态设置为下线（DOWN），并把该下线事件传播出去
+
+服务注册中心
+1、失效踢出
+我们在服务实例并不一定会正常下线，可能由于内存溢出、网络故障灯原因使得服务不能正常工作，而服务注册中心未收到 服务下线 的请求，为了从服务表中将这些无法提供服务的实例剔除，Eureka 注册中心在启动的时候会创建一个定时任务，默认每隔一段时间（默认60秒）将当前清单中超时（默认为90秒）没有续约的服务踢出出去
+
+2、自我保护
+我们在本地调试基于Eureka的程序，基本上都碰到过一些问题，在Eureka 注册中心的信息面板中出现类似的红色警告信息：
+
+实际上，该警告就是触发了Eureka Regist Center的自我保护机制，服务注册到Eureka Regist Center之后。会维护一个心跳链接，告诉Eureka Regist Center自己还活着，Eureka Regist Center在运行期间，会统计心跳失败的比例在15分钟之内低于85%,如果出现低于的情况（在单机调试的时候很容易满足，实际在生产环境中通常由于网络不稳当导致）
+Eureka Regist Center会将当前的实例注册信息保护起来，让这些实例不会过期，尽可能保护这些注册信息，但是，在这段保护期间内实例若出现问题，那么客户端很容易拿到实际已经不存在的服务实例，会出现调用失败的情况，所以客户端必须要有容错机制，比如可以使用请求重试、断路器等机制
+由于本地调试很容易出发注册的保护机制，这会是的注册中的维护服务实例不那么准确，所以，我们在本地进行开发的时候，可以使用参数来关闭保护机制，以确保注册中心可以将不可用的实例正确剔除
+eureka.server.enable-self-preservation=false
+
+Netflix
+com.netflix.disconvery.DiscoveryClient
+这个类主要用于帮助与Eureka Regist Center 相互协作
+1、向Eureka Regist Center注册服务实例
+2、向Eureka Regist Center服务租约
+3、当服务关闭期间，向Eureka Regist Center取消租约
+4、查询Eureka Regist Center中的服务实例列表
+Eureka Client 还需要配置一个Eureka Regist Center的URL列表
+
+1、Region
+com.netflix.discovery.endpoint.EndpointUtils.getRegion(clientConfig)
+默认一个微服务只可以属于一个Region
+2、Zone
+一个Region对应多个Zone
+
+Client
+实例名配置，这两个默认端口都是随机的
+1#
+server.port=${random.int[10000,19999]}
+spring.application.name=eureka-server
+eureka.instance.instanceId=${spring.application.name}:${random.int}
+
+2#
+server.port=0
+spring.application.name=eureka-server
+
+端点配置
+增加前缀(只针对设置的路径)
+management.context-path=/hello
+eureka.instance.statusPageUrlPath=${management.context-path}/info
+eureka.instance.healthCheckUrlPath=${management.context-path}/health
+eureka.instance.homePagePath=${management.context-path}/
+
+跨平台支持通信协议
+Eureka使用jersey和XStream配合JSON作为Server与Client之间的通信协议，你也可以选择实现自己的协议来替代。
+
+1、Jersey是JAX-RS的参照实现，它包含三个主要部分
+核心服务器(Core Server)
+核心客户端(Core Client)
+集成(Intergration)
+
+2、Xtream 用来将对象序列化XML(JSON)或反序列化为对象的一个java
+
+
+客户端负载均衡：Ribbon
+Spring Cloud Ribbon 
+1、服务提供者需要启动多个服务实例并注册到一个注册中心或是多个相关联的服务注册中心
+2、服务消费者直接通过调用被@LoadBalanced注解修改过的RestTemplate来实现面相服务的接口调用
+
+RestTemplate请求方法
+1、GET请求
+RestTemplate().getForEntity()
+RestTemplate().getForObject()
+2、POST请求
+RestTemplate().postForEntity()
+RestTemplate().postForObject()
+RestTemplate().postForLocation()
+3、PUT请求
+RestTemplate().put()
+4、DELETE请求
+RestTemplate().delete()
+
+ILoadBalancer接口
+1、addServers：向负载均衡器中维护的实例列表增加服务实例
+2、chooseServer：通过某种策略，从负载均衡服务器中挑选出一个具体的服务实例
+3、markServerDown：用来通知和表示负载均衡器中某个具体实例已经停止服务，不然负载均衡器在下一次获取服务实例清单前都会认为服务实例是正常服务的
+4、getReachableServers：获取当前正常服务的实例列表
+5、getAllServers：获取已知的服务实例列表，包括正常服务和停止服务的实例
+
+负载均衡器
+1、AbstractLoadBalancer
+ILoadBalancer接口的实现
+
+2、BaseLoadBalancer
+Ribbon负载均衡器的基础实现类，在类中定义了很多关于负载均衡相关的基础内容
+
+3、DynamicServerListLoadBalancer
+继承于BaseLoadBalancer类，它是对基础负载均衡器的扩展。在负载均衡器中，实现了服务实例清单在运行期间的动态更新能力；同时，还具备了对服务实例清单的过滤功能。
+
+4、ServerListUpdater
+
+5、ZoneAwareLoadBalancer
+负载均衡器对DynamicServerListLoadBalancer的扩展，在DynamicServerListLoadBalancer中，我们可以看到它并没有重写具体服务实例的chooseServer函数，所以它依然会采用在BaseLoadBalancer中实现的算法。
+
+负载均衡策略
+1、AbstractLoadBalanceRule
+负载均衡策略的抽象类，在该抽象类中定义了负载均衡器ILoadBalancer对象，该对象能够在具体实现选择服务策略时获取到一些负载均衡器中维护的信息来作为分配依据。
+
+2、RandomRule
+策略实现了服务实例清单中随机选择一个服务实例的功能
+
+3、RoundRobinRule
+策略实现了按照线性轮询的方式一次选择每个服务实例的功能。
+
+4、RetryRule
+该策略实现了一个具备重试机制的实例选择功能。
+
+5、WeightedResponseTimeRule
+该策略时对RoundRobinRule的扩展，增加了根据实例的运行情况来计算权重，并根据权重来挑选实例，已达到更优的分配效果，它的实现主要有三个核心内容。
+1)定时任务
+weightedResponeTimeRule 策略在初始化的时候通过ServerWeightTimer.schedule(new DynamicServerWeightTask(),0,serverWeightTaskTimerInterval) 启动一个定时任务，用来为每个服务实例计算权重，该任务默认30秒执行一次
+2)权重计算
+在源码中我们可以轻松找到用于存储权重的对象List<Double> accoumulated-Weights = newArrayList<Double>(),该List中每一个权重值所处的位置对应负载均衡器维护的服务实例清单中所有实例在清单中的位置
+3)实例选择
+ClientConfigEnabledRoundRobinRule
+该策略比较特殊，我们一般不直接使用它，因为它本身并没有实现什么特殊的处理逻辑，在它内部定义了一个RoundRobinRule策略，而choose函数的实现也正是使用了RoundRobinRule的线性轮询机制，所以实现的功能实际上与RoundRobinRule相同
+
+BestAvailableRule
+该策略继承自ClientConfigEnabledRoundRobinRule，在实现中它注入了负载均衡器的统计对象 LoadBalancerStats，同时在具体的choose算法中利用LoadBalancerStats保存的实例统计信息来选择满足要求的实例。
+
+PredicateBasedRule
+这是一个抽象策略，它继承了ClientConfigEnabledRoundRobinRule，是Predicate实现的策略，Predicate是Google Guava Collection工具对集合进行过滤的条件接口

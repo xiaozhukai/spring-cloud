@@ -195,4 +195,16 @@ Ribbon与Eureka结合
 
 Spring Cloud Ribbon默认实现区域亲和策略
 例：eureka.instance.metadataMap.zone = shanghai
-例：
+例：rebbon.eureka.enabled=false
+
+重试机制
+由于Spring Cloud Eureka 实现的服务治理机制强调了CAP原理中的AP，即可用性与可靠性，它与Zookeeper这个类强调CP(一致性、可靠性)的服务智力框架最大区别就是Eureka为了实现更高的服务可用性，牺牲了一定的一致性，在极端情况下宁愿接收故障实例，也不丢掉健康实例。
+1、spring.cloud.loadbalancer.retry.enabled:该参数用来开起重试机制，默认是关闭的。这里需要注意，官方文档中的配置参数少了enabled。
+2、hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds:断路器的超时时间需要大于Ribbon的超时时间，不然会触发重试
+3、hello-service.ribbon.ConnectIomeout:请求链接的超时时间
+4、hello-service.ribbon.ReadTimeout:请求处理的超时时间
+5、hello-service.ribbon.OkToRetryOnAllOperations:对所有操作请求都进行重试
+6、hello-service.ribbon.MaxAutoRetriesNextServer:切换实例的重试次数。
+7、hello-service.ribbon.MaxAutoRetries:对当前实例的重试次数
+
+服务容错保护：Spring Cloud Hystrix

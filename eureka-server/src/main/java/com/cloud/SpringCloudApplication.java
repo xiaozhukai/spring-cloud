@@ -11,5 +11,6 @@ public class SpringCloudApplication {
 	//注释
 	public static void main(String[] args) {
 		SpringApplication.run(SpringCloudApplication.class, args);
+	
 	}
 }

@@ -150,8 +150,10 @@ Ribbon负载均衡器的基础实现类，在类中定义了很多关于负载�
 该策略时对RoundRobinRule的扩展，增加了根据实例的运行情况来计算权重，并根据权重来挑选实例，已达到更优的分配效果，它的实现主要有三个核心内容。
 1)定时任务
 weightedResponeTimeRule 策略在初始化的时候通过ServerWeightTimer.schedule(new DynamicServerWeightTask(),0,serverWeightTaskTimerInterval) 启动一个定时任务，用来为每个服务实例计算权重，该任务默认30秒执行一次
+
 2)权重计算
 在源码中我们可以轻松找到用于存储权重的对象List<Double> accoumulated-Weights = newArrayList<Double>(),该List中每一个权重值所处的位置对应负载均衡器维护的服务实例清单中所有实例在清单中的位置
+
 3)实例选择
 ClientConfigEnabledRoundRobinRule
 该策略比较特殊，我们一般不直接使用它，因为它本身并没有实现什么特殊的处理逻辑，在它内部定义了一个RoundRobinRule策略，而choose函数的实现也正是使用了RoundRobinRule的线性轮询机制，所以实现的功能实际上与RoundRobinRule相同
@@ -161,3 +163,36 @@ BestAvailableRule
 
 PredicateBasedRule
 这是一个抽象策略，它继承了ClientConfigEnabledRoundRobinRule，是Predicate实现的策略，Predicate是Google Guava Collection工具对集合进行过滤的条件接口
+
+AvailabilityFilteringRule
+该策略继承自抽象策略PredicateBasedRule，所以它也继承了 先过滤清单，在轮询选择 的基本处理逻辑，其中过滤条件使用了AvailabilityPredicate
+
+ZoneAvoidanceRule
+它是PredicateBasedRule的具体实现类
+
+配置详解
+1、自动化配置
+1)IClientConfig:Ribbon的客户端配置，默认采用com.netflix.client.config.DefaulttClientConfigImpl实现
+2)IRule:Ribbon的负载均衡策略，默认采用 com.netflix.loadbalancer.ZoneAvoidanceRule实现，该策略能够在多区域环境下选出最佳区域的实例进行访问
+3)IPing:Ribbon的实例检查策略，默认采用 com.netflix.loadbalancer.NoOping实现，该检查策略是一个特殊的实现，实际上它并不会检查实例是否可用，而是始终返回true，默认认为所有服务实例都是可用的。
+4)ServerList<Server>:服务实例清单的维护机制，默认采用 com.netflix.loadbalance.ConfigurationBasedServerList实现
+5)ServerListFilter<Server>:服务实例清单过滤机制，默认采用 org.springframework.cloud.netflix.ribbon.ZonePreferenceServerListFilter实现，该策略能够优化过滤出与请求调用方处于同区域的服务实例。
+6)ILoadBalancer:负载均衡器，默认采用 com.netflix.loadbalancer.ZoneAwareLoadBalancer 实现，它具备了区域感知的能力
+
+2、Camden 版本对RibbonClient匹配优化
+1)NFLoadBalancerClassName:配置ILoadBalancer接口的实现
+2)NFLoadBalancerPingClassName:配置IPing接口的实现
+3)NFLoadBalancerRuleClassName:配置IRule接口实现
+4)NIWSServerListClassName:配置ServerList接口实现
+5)NIWSServerListFilterClassName:配置ServerListFilter接口的实现
+
+参数配置
+1、全局配置，只需使用ribbon.<key>=<value>格式进行配置即可
+2、指定客户端的配置方式采用<client>.ribbon.<key>=<value>的格式进行配置
+
+Ribbon与Eureka结合
+当在Spring Cloud的应用中同时引入Spring Cloud Ribbon 和 Spring Cloud Eureka依赖时，会触发Eureka中实现的对Ribbon的自动化配置。
+
+Spring Cloud Ribbon默认实现区域亲和策略
+例：eureka.instance.metadataMap.zone = shanghai
+例：

@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.netflix.discovery.endpoint.EndpointUtils;
+
 @RestController
 public class IndexController {
 	
@@ -44,9 +46,10 @@ public class IndexController {
 		return null;
 	}
 	
-	
+
 	@RequestMapping("/testJson")
 	public String testJson(){
+		
 		return "test";
 	}
 }

@@ -208,3 +208,43 @@ Spring Cloud Ribbon默认实现区域亲和策略
 7、hello-service.ribbon.MaxAutoRetries:对当前实例的重试次数
 
 服务容错保护：Spring Cloud Hystrix
+原理分析
+1、工作流程
+1)创建HystrixCommand或HystrixObservableCommand对象
+HystrixCommand：用在依赖的服务返回单个操作结果的时候。
+HystrixObservableCommand：用在依赖的服务返回多个擦欧洲哦结果的时候。
+Receiver：接收者，它知道如何处理具体的业务逻辑。
+Command：抽象命令，它定义了一个命令对象应具备的一系列命令操作。
+ConcreteCommand：具体命令实现，在这里它绑定了命令操作与接收者之间的关系，execute()命令的实现委托给了Receiver的action()函数。
+Invoker：调用者，它持有一个命令对象，并且可以在需求的时候通过命令对象完成具体的业务逻辑。
+
+2、命令执行
+1)execute():同步执行，从依赖的服务返回一个单一的结果对象，或是在发生错误的时候抛出异常。
+2)queue():异步执行，直接返回一个Future对象，其中包含了服务执行结束时要返回的单一结果对象。
+3)observer():返回Observable对象，它代表了操作的多个结果，它是一个Hot Observable。
+4)toObservable():同样会返回Observable对象，也代表了操作的多个结果，但它返回的是一个Cold Observable。
+5)Observalbe用来向订阅者Subscriber对象发布时间，Subscriber对象则在接收到事件后对其进行处理，而在这里所指的时间通常就是对依赖服务的调用
+6)一个Observable可以发出多个事件，直到结束或是发生异常。
+7)Observable对象每发出一个时间，就会调用对应观察者 Subscriber 对象的onNext()方法
+8)每一个Observable 的执行，最后一定会通过调用Subscriber.onCompleted() 或者 Subscriberon.onError()来结束该时间的操作流。
+
+3、结果是否被缓存
+若当前命令的请求缓存功能是被启用，并且该命令缓命中，那么缓存的结果会立即以Observable对象的形式返回
+4、断路器的否打开
+1)如果断路器是打开的，那么Hystrix在执行命令前需要检查断路器是否为打开状态
+2)如果断路器是关闭，那么Hystrix跳到第5步，检查是否有可用资源来执行命令
+5、线程池/请求队列/信号量是否沾满
+6、HystrixObservableCommand.construct()或HystrixCommand.run()
+7、计算断路器的健康度
+8、fallback处理
+9、返回成功成功响应
+
+断路器原理
+断路器在HystrixCommand 和 HystrixObservaleCommand执行过程起到了举足轻重的作用，它是Hystrix的核心部件
+
+依赖隔离
+1、应用自身得到完全保护，不会受不可控的依赖服务影响
+2、可以有效降低接入新服务的风险
+3、当依赖的服务从失效恢复正常后，它的线程池会被清除并且能够马上恢复健康的服务，相比之下，容器级别的清理恢复速度要慢的多
+4、当依赖的服务出现配置错误时候，线程池会快速反应出此问题。
+5、当依赖的服务因实现机制调整等原因造成其性能出现很大变化的时候，使用线程池的监控指标信息会反应出这些变化。

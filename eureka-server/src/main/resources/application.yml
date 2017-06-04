@@ -1,0 +1,35 @@
+server:
+  port: 8000
+management:
+  context-path: /hello
+  
+eureka:
+  instance:
+    status-page-url-path: ${management.context-path}/info
+    secure-health-check-url: ${management.context-path}/health
+    prefer-ip-address: true
+    metadata-map:
+      zone: shanghai
+  client:
+    service-url:
+      defaultZone: http://localhost:1000/eureka/
+          
+     
+spring:
+  thymeleaf:
+    prefix: classpath\:/templates/
+  datasource:
+    url: jdbc\:mysql\://10.180.10.242\:3306/test?useUnicode\=true&characterEncoding\=UTF-8
+    username: meet
+    password: 1q2w3e4r
+    driver-class-name: com.mysql.jdbc.Driver
+  application:
+    name: eureka-server
+    
+logging:
+  level:
+    root: INFO
+    org.hibernate: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.type.descriptor.sql.BasicExtractor: TRACE
+    

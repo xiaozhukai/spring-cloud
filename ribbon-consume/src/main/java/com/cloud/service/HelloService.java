@@ -11,7 +11,8 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 public class HelloService {
 
 	@Resource
-	RestTemplate restTemplate;
+	private RestTemplate restTemplate;
+	
 	
 	@HystrixCommand(fallbackMethod = "helloFallback")
 	public String helloService(){

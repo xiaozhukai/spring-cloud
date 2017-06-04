@@ -1,0 +1,18 @@
+server:
+  port: 9000
+spring:
+  application:
+    name: eureka-client
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://localhost:1000/eureka/
+        
+                
+ 

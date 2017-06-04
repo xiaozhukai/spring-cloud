@@ -1,0 +1,30 @@
+server:
+  port: 9001
+spring:
+  application:
+    name: ribbon-consume
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true    
+    
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://localhost:1000/eureka/
+      
+hystrix:
+  command:
+    default.execution.isolation.thread.timeoutInMilliseconds: 10000
+    
+hello-service:
+  ribbon:
+    ConnectTimeout: 250
+    ReadTimeout: 1000
+    OkToRetryOnAllOperations: true
+    MaxAutoRetriesNextServer: 2
+    MaxAutoRetries: 1
+
+

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.cloud.pojo.User;
+import com.cloud.user.pojo.User;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
 @RestController

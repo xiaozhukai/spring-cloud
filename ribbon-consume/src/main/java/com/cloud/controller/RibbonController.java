@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.cloud.pojo.User;
 import com.cloud.service.HelloService;
+import com.cloud.user.pojo.User;
 
 @RestController
 public class RibbonController {

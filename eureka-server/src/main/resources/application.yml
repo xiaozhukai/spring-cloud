@@ -14,17 +14,21 @@ eureka:
     service-url:
       defaultZone: http://localhost:1000/eureka/
           
-     
 spring:
-  thymeleaf:
-    prefix: classpath\:/templates/
-  datasource:
-    url: jdbc\:mysql\://10.180.10.242\:3306/test?useUnicode\=true&characterEncoding\=UTF-8
-    username: meet
-    password: 1q2w3e4r
+  jpa:
+    generate-ddl: false
+    show-sql: true
+    hibernate:
+      ddl-auto: update  
+  datasource: 
     driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/spring_cloud
+    username: root
+    password: 123
   application:
     name: eureka-server
+  thymeleaf:
+    prefix: classpath\:/templates/
     
 logging:
   level:

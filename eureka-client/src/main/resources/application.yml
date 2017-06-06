@@ -12,7 +12,8 @@ eureka:
     prefer-ip-address: true
   client:
     service-url:
-      defaultZone: http://localhost:1000/eureka/
+      #setting username and password 
+      defaultZone: http://admin:admin@localhost:1000/eureka/
       
 logging:
   level:

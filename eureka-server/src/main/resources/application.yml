@@ -3,6 +3,7 @@ server:
 management:
   context-path: /hello
   
+  
 eureka:
   instance:
     status-page-url-path: ${management.context-path}/info
@@ -13,7 +14,8 @@ eureka:
       zone: shanghai
   client:
     service-url:
-      defaultZone: http://localhost:1000/eureka/
+      #setting username and password
+      defaultZone: http://admin:admin@localhost:1000/eureka/
           
 spring:
   jpa:

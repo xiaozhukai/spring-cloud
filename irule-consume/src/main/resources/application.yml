@@ -1,0 +1,28 @@
+server:
+  port: 9002
+spring:
+  application:
+    name: irule-consume
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true    
+    
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      #setting username and password
+      defaultZone: http://admin:admin@localhost:1000/eureka/
+      #defaultZone: http://localhost:1000/eureka/
+
+#服务表注册的名称
+EUREKA-SERVER:
+  ribbon:
+    #设置随机方式负载均衡
+    #NFLoadBalancerRuleClassName: com.netflix.loadbalancer.WeightedResponseTimeRule
+    #使用随机的规则调用微服务
+    NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RandomRule
+    #配置listOfServers 默认直走这个服务，不从eureka 服务中拉取注册表获得服务
+    listOfServers: localhost:1000/eureka/

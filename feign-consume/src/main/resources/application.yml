@@ -1,12 +1,8 @@
 server:
-  port: 9001
+  port: 9003
 spring:
   application:
-    name: ribbon-consume
-  cloud:
-    loadbalancer:
-      retry:
-        enabled: true    
+    name: feign-consume  
     
 eureka:
   instance:
@@ -16,4 +12,3 @@ eureka:
       #setting username and password
       defaultZone: http://admin:admin@localhost:1000/eureka/
       #defaultZone: http://localhost:1000/eureka/
-

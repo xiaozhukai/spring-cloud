@@ -1,0 +1,3 @@
+1、可以不依赖ribbon使用client的负载均衡，实现一个 增强类 StoreClient.java 配置的是服务的提供方注册表的名称
+2、在Feign客户端上面是不能写GetMapping和PostMapping注解，默认识别不了，只能使用@RequestMapping(method = RequestMethod.GET,value = "/user/findById/{id}")这个设置提交类型
+3、在Feign客户端上面@PathVariable后面必须跟查询参数，在SpringMVC默认这个注解是可以名称就是后面参数的名称，当时Feign Client not find , PathVariable annotation was empty on param 0.r认为是0抛异常，1.5.3 spring-boot版本及以下

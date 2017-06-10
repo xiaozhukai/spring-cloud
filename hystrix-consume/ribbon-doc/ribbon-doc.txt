@@ -1,0 +1,8 @@
+1、@LoadBalanced
+使用该注解配置到RestTemplate上面就整合了ribbon,通过负载算法可以将服务转发到注册服务上，这是客户端负载
+
+2、config包配置定制自定义 ribbon
+默认不能把config包和配置@RibbonClient标签的类放到Application类下面，这样会是的该类会和ribbonclient重叠 
+
+ServiceInstance choose = loadBalancerClient.choose("EUREKA-SERVER");
+获取到注册列表中服务的信息

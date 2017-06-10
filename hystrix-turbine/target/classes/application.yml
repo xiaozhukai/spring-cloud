@@ -1,9 +1,9 @@
 server:
-  port: 9003
+  port: 9006
 spring:
   application:
-    name: feign-consume  
-    
+    name: hystrix-turbine
+      
 eureka:
   instance:
     prefer-ip-address: true
@@ -13,4 +13,9 @@ eureka:
       defaultZone: http://admin:admin@localhost:1000/eureka/
       #defaultZone: http://localhost:1000/eureka/
       
-
+turbine:
+  aggregator:
+    clusterConfig: default
+  appConfig: hystrix-consume
+  clusterNameExpression: "'default'"
+  

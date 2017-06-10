@@ -82,6 +82,16 @@ eureka.instance.statusPageUrlPath=${management.context-path}/info
 eureka.instance.healthCheckUrlPath=${management.context-path}/health
 eureka.instance.homePagePath=${management.context-path}/
 
+/health			监控指标端点
+/beans			获取引用上下文创建Bean端点
+/configprops	获取应用中配置的属性信息报告端点
+/env			获取应用所有了用的环境属性报告
+/mappings		Spring MVC的控制器映射关系报告。
+/info			应用子自定义的信息
+/metrics		应用的各类重要度量指标
+/dump			暴露程序与进行中的线程信息
+/trance			返回基本的HTTP跟踪信息
+
 跨平台支持通信协议
 Eureka使用jersey和XStream配合JSON作为Server与Client之间的通信协议，你也可以选择实现自己的协议来替代。
 
@@ -248,3 +258,59 @@ Invoker：调用者，它持有一个命令对象，并且可以在需求的时�
 3、当依赖的服务从失效恢复正常后，它的线程池会被清除并且能够马上恢复健康的服务，相比之下，容器级别的清理恢复速度要慢的多
 4、当依赖的服务出现配置错误时候，线程池会快速反应出此问题。
 5、当依赖的服务因实现机制调整等原因造成其性能出现很大变化的时候，使用线程池的监控指标信息会反应出这些变化。
+
+
+设置默认连接超时时间
+#解决第一次请求报超时异常的方案
+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds: 毫秒值
+
+配置线程Hystrix
+spring-cloud 1.2之后才有的，正常的时候不要配置,抛异常的时候在配置
+配置@HystrixCommand(commandProperties = @HystrixProperty(name="execution.isolation.strategy",value="SEMAPHORE"))
+就会使得Hystrix和配置该注解的方法在一个线程里面执行,没有配置就是默认每隔方法启动一个线程
+
+
+使用查看服务状态必须引入jar才能查看
+http://localhost:9004/hystrix.stream命令可以查看连接信息
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+
+服务状态参数可视化--监控单个服务数据
+通过引入hystrix-dashboard项目
+该项目引入spring-cloud-starter-hystrix-dashboard的jar包
+1、http://localhost:适配端口/hystrix进入界面
+2、配置所要监控的http://localhost:监控端口/hystrix.stream 
+3、数据变成可视化
+4、默认是不需要把这个注册到eureka服务管理里面去
+
+服务状态参数可视化--监控整个服务集群
+1、pom导入 spring-cloud-starter-turbine
+2、turbine必须注册到eureka服务上面去
+3、可以在yaml 配置文件中配置 appConfig: hystrix-consume,.... 可以配置多个监听
+4、再把 http://localhost:turbine端口/turbine.stream  配置到hystrix - dashboard监听中
+5、这样直接可以监听多个可视化数据
+Turbine是一个应用程序，它将所有相关的/hystrix.stream端点聚合到一个组合的/turbine.stream中，以便在Hystrix仪表板中使用
+
+
+Netfix Hystrix ： Zuul  网关转发
+注意：@EnableZuulProxy 包含 @EnableCircuitBreaker @EnableDiscoveryClient的组合注解
+注意：zuul 默认是可以反向代理注册表中的所有微服务，http://localhost:zuul_port/注册表的名称/user/findById/1
+注意：zuul.routes.注册表的名称 : /**   		#配置注册表中的名称，并配置指定路径，/** 配置是默认去除了注册名称
+
+去除指定微服务：zuul。=.iqnoredServices: * 这是去除所有的微服务 然后在   zuul.routes.注册表的名称 : /** 指定的微服务
+去除指定微服务：zuul。=.iqnoredServices: 指定注册表中微服务的名称
+
+注意：zuul.routes.两个相统一的任意名称.path: /指定修改成的访问名称/**
+	  zuul.routes.两个相统一的任意名称.service-id: eureka注册表中对应的服务名称
+	  此方法可以直接重新指定访问访问路径
+	  
+注意：zuul.routes.两个相统一的任意名称.path: /指定修改成的访问名称/**
+	  zuul.routes.两个相统一的任意名称.url: eureka注册表中对应的服务地址 	http://192.168.253.1:8000
+	  此方法可以直接重新指定访问访问路径
+	  
+注意：#配置zuul负载均衡
+ribbon.eureka.enabled: false
+  
+eureka-server.ribbon.listOfServers: http://192.168.253.1:8000 , ....... 多一个同一个服务的地址端口

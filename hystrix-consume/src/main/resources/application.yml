@@ -1,8 +1,12 @@
 server:
-  port: 9003
+  port: 9004
 spring:
   application:
-    name: feign-consume  
+    name: hystrix-consume
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true    
     
 eureka:
   instance:
@@ -12,5 +16,7 @@ eureka:
       #setting username and password
       defaultZone: http://admin:admin@localhost:1000/eureka/
       #defaultZone: http://localhost:1000/eureka/
-      
+ 
+#解决第一次请求报超时异常的方案
+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds: 5000
 

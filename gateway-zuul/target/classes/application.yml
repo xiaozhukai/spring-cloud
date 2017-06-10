@@ -1,0 +1,45 @@
+server:
+  port: 9007
+spring:
+  application:
+    name: gateway-zuul
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true    
+    
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      #setting username and password
+      defaultZone: http://admin:admin@localhost:1000/eureka/
+      #defaultZone: http://localhost:1000/eureka/
+ 
+#解决第一次请求报超时异常的方案
+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds: 5000
+
+zuul:
+  routes:
+#    配置注册表中的名称，并配置指定路径
+#    eureka-server: /**
+
+#   此方法可以直接重新指定访问路径
+    user: 
+      path: /**
+      service-id: eureka-server
+   
+#   通过注册的ip地址和端口修改访问路径
+#    user: 
+#      path: /user-url/**
+#      url: http://192.168.253.1:8000
+
+#配置zuul负载均衡
+ribbon:
+  eureka:
+    enabled: false
+  
+eureka-server:
+  ribbon:
+    listOfServers: http://192.168.253.1:8000

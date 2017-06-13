@@ -43,3 +43,4 @@ ribbon:
 eureka-server:
   ribbon:
     listOfServers: http://192.168.253.1:8000
+    

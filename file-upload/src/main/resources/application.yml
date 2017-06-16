@@ -1,0 +1,19 @@
+server:
+  port: 9008
+  
+spring:
+  application:
+    name: file-upload
+  http:
+    multipart:
+      max-file-size: 200Mb      # Max file size,默认1M
+      max-request-size: 2500Mb  #Max request size,默认是10M
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      #setting username and password
+      defaultZone: http://admin:admin@localhost:1000/eureka/
+      #defaultZone: http://localhost:1000/eureka/
